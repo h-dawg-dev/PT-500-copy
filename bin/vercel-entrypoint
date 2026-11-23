@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+# Session advisory locks used by Rails migrations require a direct connection.
+# Keep the pooled DATABASE_URL for Puma and normal application requests.
+migration_database_url="${DATABASE_URL_UNPOOLED:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL:-}}}"
+if [[ "$migration_database_url" == *-pooler.* ]]; then
+  echo "Vercel migrations require DATABASE_URL_UNPOOLED or POSTGRES_URL_NON_POOLING." >&2
+  exit 1
+fi
+
+DATABASE_URL="$migration_database_url" ./bin/rails db:vercel_migrate
+
+exec "${@}"

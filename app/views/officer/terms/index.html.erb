@@ -1,0 +1,53 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Terms and semesters</h1>
+<p class="lede">Terms decide which semester a member's points count toward. Keep a term covering today so the member chart can show current eligibility.</p>
+<p>Current points automatically start at zero at midnight in America/Chicago on each term's start date. The end date includes the whole day. Attendance and adjustments stay in their original semester; no reset button or scheduled job is needed.</p>
+<p><%= link_to "Review prior-semester reports", officer_csv_transfer_path, class: "text-link" %> by selecting a term or all time.</p>
+
+<% unless @current_term %>
+  <p class="alert" role="alert">No term covers today. Members see <strong>Current term unavailable</strong> until you add a term whose dates include today.</p>
+<% end %>
+
+<div class="toolbar">
+  <%= link_to "Add a term", new_officer_term_path, class: "button" %>
+</div>
+
+<% if @terms.any? %>
+  <div class="table-scroll">
+    <table class="roster">
+      <thead>
+        <tr>
+          <th scope="col">Term</th>
+          <th scope="col">Dates</th>
+          <th scope="col">Required points</th>
+          <th scope="col">Category minimums</th>
+          <th scope="col">Events</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @terms.each do |term| %>
+          <tr>
+            <td>
+              <%= term.name %>
+              <% if term == @current_term %><span class="when-chip">current</span><% end %>
+            </td>
+            <td class="mono"><%= term.starts_on.strftime("%Y-%m-%d") %> to <%= term.ends_on.strftime("%Y-%m-%d") %></td>
+            <td class="mono"><%= term.required_points %></td>
+            <td class="mono"><%= term.required_professional_points %> professional, <%= term.required_social_points %> social</td>
+            <td class="mono"><%= term.events.count %></td>
+            <td><%= link_to "Edit", edit_officer_term_path(term), class: "text-link" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <section class="empty-board">
+    <h2>No terms yet</h2>
+    <p>Add the current semester before members can see points for it.</p>
+  </section>
+<% end %>
+
+<p class="quiet">Changing a term's dates reassigns events in the old and new ranges. Review member totals before and after a change. Terms cannot overlap.</p>
+<p><%= link_to "Back to officer dashboard", officer_root_path, class: "text-link" %></p>

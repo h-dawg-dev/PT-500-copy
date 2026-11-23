@@ -1,0 +1,50 @@
+<%= form_with model: [ :officer, event ], class: "clipboard" do |form| %>
+  <% if event.persisted? && event.attendances.exists? %>
+    <p class="notice">This event has recorded attendance. Changing its points, category, or date changes existing members' credit. Review the attendance and member points reports before saving.</p>
+  <% end %>
+  <% if event.errors.any? %>
+    <div class="alert" role="alert">
+      <p>Could not save this event.</p>
+      <ul>
+        <% event.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <p>
+    <%= form.label :title, "Title" %>
+    <%= form.text_field :title, required: true, placeholder: "General meeting" %>
+  </p>
+  <p>
+    <%= form.label :location, "Room" %>
+    <%= form.text_field :location, placeholder: "PEAP 202" %>
+  </p>
+  <div class="when-fields">
+    <p>
+      <%= form.label :starts_at, "Starts" %>
+      <%= form.datetime_local_field :starts_at, value: datetime_local_value(event.starts_at), required: true %>
+    </p>
+    <p>
+      <%= form.label :ends_at, "Ends" %>
+      <%= form.datetime_local_field :ends_at, value: datetime_local_value(event.ends_at) %>
+    </p>
+    <p class="points-field">
+      <%= form.label :points, "Points" %>
+      <%= form.number_field :points, min: 0, max: Event::MAX_POINTS, step: 1 %>
+    </p>
+    <p>
+      <%= form.label :category, "Category" %>
+      <%= form.select :category, Event.categories.keys.map { |category| [ category.humanize, category ] } %>
+    </p>
+  </div>
+  <p>
+    <%= form.label :notes, "Notes" %>
+    <%= form.text_area :notes, rows: 4, placeholder: "Bring your PTCAS questions." %>
+  </p>
+  <p class="form-actions">
+    <%= form.submit event.new_record? ? "Post event" : "Save event", class: "button" %>
+    <%= link_to "Cancel", event.persisted? ? officer_event_path(event) : officer_events_path, class: "text-link" %>
+  </p>
+<% end %>

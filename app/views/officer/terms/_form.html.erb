@@ -1,0 +1,44 @@
+<%= form_with model: @term, url: @term.persisted? ? officer_term_path(@term) : officer_terms_path, method: @term.persisted? ? :patch : :post, class: "clipboard" do |form| %>
+  <% if @term.errors.any? %>
+    <div class="alert" role="alert">
+      <p>Nothing was saved. Fix the following:</p>
+      <ul>
+        <% @term.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :name, "Term name" %>
+    <%= form.text_field :name, required: true, placeholder: "Fall 2026" %>
+  </div>
+  <div class="field">
+    <%= form.label :starts_on, "Starts on" %>
+    <%= form.date_field :starts_on, required: true %>
+  </div>
+  <div class="field">
+    <%= form.label :ends_on, "Ends on" %>
+    <%= form.date_field :ends_on, required: true %>
+  </div>
+  <div class="field">
+    <%= form.label :required_points, "Total points required" %>
+    <%= form.number_field :required_points, required: true, min: 0, step: 1 %>
+  </div>
+  <div class="field">
+    <%= form.label :required_professional_points, "Professional points required" %>
+    <%= form.number_field :required_professional_points, required: true, min: 0, step: 1 %>
+  </div>
+  <div class="field">
+    <%= form.label :required_social_points, "Social points required" %>
+    <%= form.number_field :required_social_points, required: true, min: 0, step: 1 %>
+  </div>
+
+  <p class="form-actions">
+    <%= form.submit @term.persisted? ? "Save term" : "Create term", class: "button" %>
+    <%= link_to "Cancel", officer_terms_path, class: "text-link" %>
+  </p>
+<% end %>
+
+<p class="quiet">Term dates cannot overlap, including a shared boundary day. Adding a term assigns existing events in its date range.</p>

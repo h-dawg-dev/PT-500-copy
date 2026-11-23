@@ -1,0 +1,12 @@
+<article class="intake-chart">
+  <h3><%= title %></h3>
+  <p class="quiet"><%= description %></p>
+  <ul class="intake-bars" aria-label="<%= title %> distribution">
+    <% rows.each do |row| %>
+      <li class="<%= 'intake-bar-muted' if row[:muted] %>">
+        <div class="intake-bar-label"><span><%= row[:label] %></span><strong><%= row[:count] %> <span><%= row[:percentage] %>%</span></strong></div>
+        <div class="intake-bar-track" aria-hidden="true"><span style="width: <%= row[:percentage] %>%"></span></div>
+      </li>
+    <% end %>
+  </ul>
+</article>

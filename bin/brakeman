@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "bundler/setup"
+
+# Scan with the version pinned in Gemfile.lock; Dependabot manages updates.
+
+load Gem.bin_path("brakeman", "brakeman")

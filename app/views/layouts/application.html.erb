@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "Physical Therapy Society" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Physical Therapy Society">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@125,600;125,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body data-controller="clerk" data-turbo="<%= content_for(:page_turbo).presence || "true" %>" data-clerk-publishable-key-value="<%= ENV['CLERK_PUBLISHABLE_KEY'] %>">
+    <div class="tape-spine" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <p class="brand">
+        <%= link_to root_path, class: "brand-link" do %>
+          <span>
+            <span class="brand-kicker">Texas A&amp;M</span>
+            <span class="brand-name">Physical Therapy Society</span>
+          </span>
+        <% end %>
+      </p>
+      <nav>
+        <% if signup_restricted? %>
+          <button type="button" class="button-secondary" data-action="clerk#signOut">Sign out</button>
+        <% elsif signed_in? %>
+          <%= link_to "Home", root_path %>
+          <%= link_to "Events", events_path %>
+          <% if current_user.member? && dues_payment_url.present? %>
+            <%= link_to "Dues", dues_payment_url, target: "_blank", rel: "noopener noreferrer", data: { turbo: false } %>
+          <% end %>
+          <% if current_user.officer? %>
+            <%= link_to "Officer tools", officer_root_path %>
+            <%= link_to "Post an event", new_officer_event_path, class: "nav-action" %>
+          <% end %>
+          <details class="account-menu" data-controller="menu" data-action="click@window->menu#closeOutside keydown.esc@window->menu#close">
+            <summary class="whoami"><%= current_user.display_name %></summary>
+            <div class="account-menu-list">
+              <%= link_to "View my information", profile_path %>
+              <%= link_to "Help", help_path %>
+              <button type="button" data-action="clerk#signOut">Sign out</button>
+            </div>
+          </details>
+          <span class="role-pill"><%= current_user.officer? ? "officer" : "member" %></span>
+          <% unless content_for(:page_turbo) == "false" %>
+            <span data-clerk-target="userButton"></span>
+          <% end %>
+        <% elsif clerk_sign_in_url.present? %>
+          <%= link_to "Sign in", clerk_sign_in_url, class: "nav-action", data: { action: "clerk#signIn", turbo: false } %>
+        <% else %>
+          <span>Sign in</span>
+        <% end %>
+      </nav>
+    </header>
+
+    <main class="<%= content_for(:main_class) %>">
+      <% if !signup_restricted? && signed_in? && !questionnaire_completed? && %w[ questionnaire profiles ].exclude?(controller_name) %>
+        <div class="notice intake-reminder" role="status">
+          <p>You haven't filled out the Member Intake Form yet. Please take a moment to complete it.</p>
+          <%= link_to "Fill out the form", questionnaire_path, class: "button compact" %>
+        </div>
+      <% end %>
+      <% if flash[:notice] %>
+        <p class="notice" role="status"><%= flash[:notice] %></p>
+      <% end %>
+      <% if flash[:alert] %>
+        <p class="alert" role="alert"><%= flash[:alert] %></p>
+      <% end %>
+
+      <%= yield %>
+    </main>
+
+    <footer class="site-footer" data-app-version="<%= Rails.configuration.x.app_version %>">
+      <small>Version <%= Rails.configuration.x.app_version %></small>
+    </footer>
+
+    <%# U12.1: the member's unseen point changes, on whichever page they land after signing in. %>
+    <%= render "announcements/points", adjustments: point_announcements if point_announcements.any? %>
+  </body>
+</html>

@@ -1,0 +1,161 @@
+<p class="eyebrow">Member record</p>
+<h1><%= @member.display_name %></h1>
+<p class="lede"><%= @member.email %> · <%= @member.role %></p>
+<p><%= link_to "All member records", officer_members_path, class: "text-link" %></p>
+
+<dl class="facts">
+  <div>
+    <dt>Major</dt>
+    <dd><%= @member.major.presence || "Not set" %></dd>
+  </div>
+  <div>
+    <dt>T-shirt size</dt>
+    <dd class="mono"><%= @member.tshirt_size.presence || "Not set" %></dd>
+  </div>
+</dl>
+
+<section>
+  <h2>Member intake form</h2>
+  <% if @intake_response.present? %>
+    <dl class="facts">
+      <div>
+        <dt>Class standing</dt>
+        <dd><%= questionnaire_answer_label(@intake_response, "classification") %></dd>
+      </div>
+      <div>
+        <dt>Expected graduation</dt>
+        <dd><%= questionnaire_answer_label(@intake_response, "expected_graduation") %></dd>
+      </div>
+      <div>
+        <dt>Transfer student</dt>
+        <dd><%= questionnaire_answer_label(@intake_response, "transfer_student") %></dd>
+      </div>
+      <div>
+        <dt>First generation</dt>
+        <dd><%= questionnaire_answer_label(@intake_response, "first_generation") %></dd>
+      </div>
+      <div>
+        <dt>Email opt-in</dt>
+        <dd><%= questionnaire_answer_label(@intake_response, "email_opt_in") %></dd>
+      </div>
+      <div>
+        <dt>Submitted</dt>
+        <dd class="mono"><%= @intake_response.created_at.in_time_zone.strftime("%Y-%m-%d") %></dd>
+      </div>
+    </dl>
+  <% else %>
+    <p class="quiet">No intake form submitted yet.</p>
+  <% end %>
+</section>
+<%# U30.3, U30.4: any officer can record or undo this term's dues. Officers pay no dues. %>
+<section id="dues">
+  <h2>Dues<%= " · #{@term.name}" if @term %></h2>
+  <% if !@member.owes_dues? %>
+    <p class="quiet">Officers do not pay dues.</p>
+  <% elsif @term.nil? %>
+    <p class="quiet">No term covers today, so there is no current semester to record dues for. Ask an administrator to set the term dates.</p>
+  <% elsif @member.dues_paid?(@term) %>
+    <p class="tape-tab">Dues paid for <%= @term.name %></p>
+    <%= button_to "Undo dues payment", officer_member_dues_payment_path(@member), method: :delete, params: { expected_term_id: @term.id }, class: "linkish", form: { data: { turbo_confirm: "Mark #{@member.display_name} as not having paid #{@term.name} dues?" } } %>
+  <% else %>
+    <p>Dues not paid yet for <%= @term.name %>.</p>
+    <%= button_to "Mark dues paid", officer_member_dues_payment_path(@member), params: { expected_term_id: @term.id }, class: "button" %>
+  <% end %>
+</section>
+<%# O14.1: total and category progress for the current term, including adjustments. %>
+<% if @member.earns_points? && @term %>
+  <% category_points = @member.points_by_category(@term) %>
+  <% earned = category_points.values.sum %>
+  <section class="points-summary">
+    <h2>Points · <%= @term.name %></h2>
+    <p class="tape-tab"><span class="mono"><%= earned %></span> / <%= @term.required_points %> points earned</p>
+    <dl class="facts">
+      <% category_points.each do |category, points| %>
+        <div>
+          <dt><%= category.humanize %></dt>
+          <dd class="mono"><%= points %><% if (required = @term.required_category_points[category]) %> / <%= required %> needed<% end %></dd>
+        </div>
+      <% end %>
+    </dl>
+    <% if @member.points_requirement_met?(@term) %>
+      <p>Has met the <%= @term.name %> points requirement.</p>
+    <% else %>
+      <ul>
+        <% if earned < @term.required_points %>
+          <li><%= pluralize(@term.required_points - earned, "more point") %> needed in total</li>
+        <% end %>
+        <% @member.missing_category_points(@term).each do |category, missing| %>
+          <% next if missing.zero? %>
+          <li><%= pluralize(missing, "#{category} point") %> still needed</li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+<% end %>
+
+<section id="adjust-points">
+  <h2>Adjust points</h2>
+  <%# O14.2: every problem is listed and nothing is saved. %>
+  <% if @adjustment.errors.any? %>
+    <div class="alert" role="alert">
+      <p>Could not save the adjustment. Nothing was changed.</p>
+      <ul>
+        <% @adjustment.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%# O14.1: add or subtract points, choose the category and enter a reason. %>
+  <% if @member.earns_points? && @term %>
+    <p class="quiet">Correct a mistake, such as a member who attended but was not checked in. This changes <%= @member.display_name %>'s <%= @term.name %> points only.</p>
+    <%= form_with model: @adjustment, url: officer_member_point_adjustments_path(@member), class: "clipboard" do |form| %>
+      <%= hidden_field_tag :expected_term_id, @term.id %>
+      <%# div, not p: Rails wraps an invalid field in a div, which cannot sit inside a paragraph. %>
+      <div class="field">
+        <%= form.label :points, "Amount" %>
+        <div class="points-field">
+          <%= form.number_field :points, required: true, step: 1, min: -Event::MAX_POINTS, max: Event::MAX_POINTS, aria: { describedby: "adjustment_points_hint" } %>
+        </div>
+        <p class="field-hint" id="adjustment_points_hint">A positive number adds points. A negative number, such as -2, subtracts them.</p>
+      </div>
+      <div class="field">
+        <%= form.label :category, "Category" %>
+        <%= form.select :category, Event.categories.keys.map { |category| [ category.humanize, category ] }, { include_blank: "Choose a category" }, required: true %>
+      </div>
+      <div class="field">
+        <%= form.label :reason, "Reason" %>
+        <%= form.text_area :reason, rows: 3, required: true, maxlength: PointAdjustment::REASON_MAX_LENGTH, placeholder: "Attended the Sep 22 clinic night but was not checked in." %>
+      </div>
+      <p class="form-actions">
+        <%= form.submit "Save adjustment", class: "button" %>
+      </p>
+    <% end %>
+  <%# O14.3: no form on an officer's record. %>
+  <% elsif @adjustment.errors.none? %>
+    <p class="quiet">
+      <% if @member.earns_points? %>
+        No term covers today, so there is no current semester to adjust. Ask an administrator to set the term dates.
+      <% else %>
+        Officers are not part of the points system, so they can't be given points.
+      <% end %>
+    </p>
+  <% end %>
+</section>
+
+<%# O14.1: the change shows here right after saving. %>
+<section>
+  <h2>Points history · <%= @history_term ? @history_term.name : "All time" %></h2>
+  <%= form_with url: officer_member_path(@member), method: :get do |form| %>
+    <%= form.label :history_term_id, "History period" %>
+    <%= form.select :history_term_id, options_for_select([["All time", "all"]] + Term.chronological.reverse.map { |term| [term.name, term.id] }, @history_term&.id || "all") %>
+    <%= form.submit "View history", class: "button" %>
+  <% end %>
+  <p class="quiet">Choose a semester to review its attendance and adjustment reasons. The adjustment form above always applies to the current semester.</p>
+  <% if @history.any? %>
+    <%= render "shared/points_history", entries: @history %>
+  <% else %>
+    <p class="quiet">No check-ins or adjustments yet.</p>
+  <% end %>
+</section>

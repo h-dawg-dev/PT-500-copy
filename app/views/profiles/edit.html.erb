@@ -1,0 +1,39 @@
+<% content_for :page_turbo, "false" %>
+<% content_for :head do %>
+  <meta name="turbo-visit-control" content="reload">
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
+<p class="eyebrow">Your clinic chart</p>
+<h1>My information</h1>
+<p class="lede">Keep your information current. Only your name and email are required.</p>
+
+<%= form_with url: profile_path, method: :patch, scope: :questionnaire, class: "clipboard",
+  data: { controller: "unsaved-changes", unsaved_changes_saved_value: @saved_information.to_json,
+          action: "input->unsaved-changes#refresh change->unsaved-changes#refresh submit->unsaved-changes#submit" } do |form| %>
+  <div class="unsaved-banner" data-unsaved-changes-target="banner" role="status" aria-live="polite" hidden>
+    <span><strong>You have unsaved changes.</strong> Save your information before leaving this page.</span>
+    <a href="#information-save" class="text-link">Review and save</a>
+  </div>
+  <% if @errors.present? %>
+    <div class="alert" role="alert" tabindex="-1" id="information-errors">
+      <p>Could not save your information. Nothing was changed. Your answers are kept below so you can fix them.</p>
+      <ul><% @errors.each do |message| %><li><%= message %></li><% end %></ul>
+    </div>
+  <% end %>
+
+  <%= render "questionnaire/questions", form: form %>
+
+  <p class="form-actions">
+    <%= form.submit "Save information", class: "button", id: "information-save" %>
+    <%= link_to "Cancel", profile_path, class: "text-link" %>
+  </p>
+  <dialog class="unsaved-dialog" data-unsaved-changes-target="dialog" data-action="close->unsaved-changes#clearDestination"
+    aria-labelledby="unsaved-title" aria-describedby="unsaved-description">
+    <h2 id="unsaved-title">Leave without saving?</h2>
+    <p id="unsaved-description">Your changes have not been saved. Stay on this page to save them, or discard them and leave.</p>
+    <div class="form-actions">
+      <button type="button" class="button-secondary" data-action="unsaved-changes#keepEditing" autofocus>Keep editing</button>
+      <button type="button" class="button" data-action="unsaved-changes#discard">Discard changes and leave</button>
+    </div>
+  </dialog>
+<% end %>

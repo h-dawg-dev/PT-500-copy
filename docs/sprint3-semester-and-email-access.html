@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sprint 3 — Semester points and email access</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #20252b; background: #f6f4ef; }
+    body { max-width: 880px; margin: 40px auto; padding: 32px; background: white; line-height: 1.6; }
+    h1, h2 { color: #500000; line-height: 1.2; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { text-align: left; vertical-align: top; padding: 12px; border: 1px solid #d9d4ce; }
+    th { background: #f2ede7; } code { overflow-wrap: anywhere; }
+    .status { padding: 16px; background: #f5eee5; border-left: 4px solid #500000; }
+    @media print { body { margin: 0; padding: 0; background: white; } }
+  </style>
+</head>
+<body>
+  <h1>Semester points and email access</h1>
+  <p>U15 and U16, including the member information flow fix · Version 1.3.1 · Prepared October 28, 2026</p>
+  <p class="status">Implementation and automated verification are separate from customer acceptance. Staging UAT, screenshots, final semester-date approval, and customer sign-off remain pending.</p>
+
+  <h2>Semester rollover</h2>
+  <p>Points are calculated from attendance and manual adjustments for the current term. The term changes automatically at midnight in <strong>America/Chicago</strong> on its configured start date. End dates include the entire local day. UTC timestamps are converted to Central time before choosing a term, including daylight-saving transitions.</p>
+  <p>For example, a member with seven Fall points begins Spring with zero Spring points. The Fall attendance, adjustments, reasons, and reports remain available. Spring events and corrections count only toward Spring. Repeated reads and event reassignment do not add reset records or duplicate credit.</p>
+  <ol>
+    <li>Before each semester, an officer opens <strong>Terms and semesters</strong> and creates a term with the approved dates and requirements. Terms cannot overlap.</li>
+    <li>At its start date, the new term becomes current automatically. No destructive reset, officer reset action, or scheduled job is required.</li>
+    <li>On a member record, select a <strong>History period</strong> to inspect prior attendance and adjustment reasons, or choose All time. The correction form continues to apply to the current term.</li>
+    <li>Use <strong>Event import and CSV reports</strong> to download members/points and attendance by term or all time. Period/Term columns identify the semester.</li>
+  </ol>
+  <p>An adjustment form opened in one term and submitted after the boundary is rejected with a request to review the new term. The server assigns the current term to corrections and ignores a submitted adjustment term ID. Officers retain attendance records but earn no member points and cannot receive manual point adjustments.</p>
+  <p>If no term covers today, the app shows <strong>Current term unavailable</strong> and permits no current-term adjustments. Administrators must supply the next approved date range. Existing reference terms are examples already in the repository, not a new claim of customer-approved transition dates.</p>
+
+  <h2>Email access policy</h2>
+  <p>The server requires Clerk's verified primary email to be either an exact <strong>@tamu.edu</strong> address or <strong>ptsocietytamu@gmail.com</strong>. Surrounding whitespace and case are normalized. Other Gmail addresses, Gmail plus aliases, TAMU subdomains, suffix/lookalike domains, missing primary emails, and unverified emails are rejected.</p>
+  <p>The rule applies to every authenticated request, including existing sessions and direct officer requests. A denial returns HTTP 403 with a generic explanation and sign-out control, without changing stored member data. Existing valid TAMU members and officers keep their stored permissions.</p>
+  <p>The organization Gmail account always has member-level access. Its address cannot gain officer rights through <code>OFFICER_EMAILS</code>, the admin promotion endpoint, or the promotion interface. A legacy officer role on that account is demoted on its next verified sign-in. Other allowed TAMU officers retain their officer role.</p>
+  <p>The former optional, new-signups-only switch is replaced by this mandatory access policy. The migration enables the stored setting and changes its default to true. Attempts to disable it fail validation; authentication also enforces the policy independently of that stored flag. This section supersedes older documentation describing unrestricted existing accounts or an optional signup switch.</p>
+
+  <h2>Deployment and historical data</h2>
+  <ul>
+    <li>Apply <code>20261028120000_enforce_email_access_policy.rb</code> during normal migration. It changes the access setting only; no attendance, points, profiles, intake, or dues records are reset or deleted.</li>
+    <li>Keep Clerk's hosted signup rules aligned with TAMU plus the exact Gmail exception. If Clerk blocks that Gmail address before the app receives a session, the Clerk administrator must allow the exact address there too. Hosted Clerk configuration was not changed in this PR.</li>
+    <li>Legacy events without a term can be assigned through the existing term maintenance flow. Review reports before changing historical term dates; reassignment runs transactionally and preserves the existing point-balance protections.</li>
+    <li>No history expiration or cleanup policy is added. Retention duration and any exceptional backfill still require a team/customer decision.</li>
+    <li>This PR targets <code>test</code>. Existing version and CI deployment gates and the <code>dev</code>/<code>main</code> deployment rules remain in place.</li>
+  </ul>
+
+  <h2>One place to update member information</h2>
+  <p>The account menu and new-member check-in now lead to one editable <strong>Your information</strong> page. Member details and optional intake answers share one <strong>Save your information</strong> button. Saving keeps the page editable, so members can change either section without returning to a separate submission screen. Name and email remain supplied by the signed-in account.</p>
+  <p>Both sections save in one database transaction. If either save fails, neither section changes, and the entered values remain on the page with an error explanation. Existing and legacy intake responses are updated rather than duplicated. Old questionnaire endpoints remain compatible with previously opened forms.</p>
+
+  <h2>Acceptance coverage</h2>
+  <table>
+    <thead><tr><th>Criteria</th><th>Automated evidence</th></tr></thead>
+    <tbody>
+      <tr><td>U15.1–U15.3</td><td><code>semester_rollover_spec.rb</code>: Central midnight, fresh totals, intact profile/attendance, repeated reassignment, new accrual, rollback, and overlap rejection.</td></tr>
+      <tr><td>U15.4–U15.5</td><td>Prior and current CSV reports; prior adjustment reasons in the history selector; current-only corrections; stale form rejection; officer points exclusion.</td></tr>
+      <tr><td>U16.1–U16.2, U16.4–U16.5</td><td><code>restricted_sign_in_spec.rb</code> and <code>signup_policy_spec.rb</code>: verified primary email, case/whitespace, denied domains, existing accounts, missing verification, direct requests, and disabled legacy setting.</td></tr>
+      <tr><td>U16.3</td><td>Organization member access, officer page/JSON write denial, stale officer demotion, and rejected admin promotion.</td></tr>
+    </tbody>
+  </table>
+  <p>Local verification on October 28, 2026 used Ruby 3.3.12, Rails 8.1.3.1, and an isolated PostgreSQL 18 test database. The PR suite passed <strong>409 RSpec examples</strong> and <strong>20 JavaScript/versioning tests</strong>. RuboCop passed for 83 repository Ruby files; Brakeman reported zero security warnings; the updated gem advisory audit found no vulnerabilities. Unrelated untracked workspace artifacts were excluded from the repository lint and final RSpec file list. GitHub Actions is disabled in the repository, so no hosted CI or automatic staging deployment is asserted.</p>
+
+  <h2>Staging UAT to complete</h2>
+  <p>Capture the prior-term report and history, configure adjacent approved test terms, simulate the Central-time boundary, and compare zero initial current points with preserved prior records. Repeat the rollover/reassignment, add a new event, make a current adjustment, submit a stale form, and check an officer account. Test the exact organization Gmail with real Clerk sign-in, TAMU case/whitespace, rejected domains, existing users, and direct officer access.</p>
+  <p>Record the staging environment, PR/commit, CI links, expected and observed results, tester/date, redacted screenshots, and customer sign-off. No staging UAT execution or customer approval is asserted by this document.</p>
+</body>
+</html>

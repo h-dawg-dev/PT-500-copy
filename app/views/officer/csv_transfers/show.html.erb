@@ -1,0 +1,34 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Event import and CSV reports</h1>
+<p class="lede">Bring in GetInvolved events and download participation reports.</p>
+
+<section>
+  <h2>Import GetInvolved events</h2>
+  <p>Upload the <strong>Excel (.xlsx)</strong> event export directly from GetInvolved. No conversion is needed. Keep its one event worksheet and original column headers. CSV UTF-8 exports also work.</p>
+  <p>Dates use Central time. New events start with <strong>1 point</strong> and the <strong>general</strong> category. Review them before recording attendance. Existing references are skipped, so importing again keeps your edits.</p>
+  <p class="quiet">This imports event details, not member attendance. All listed statuses are imported. Maximum: 2 MB and 2,000 events. If a row is invalid, nothing is imported.</p>
+  <% if @import_errors.present? %>
+    <div class="alert" role="alert">
+      <p>No events were imported. Correct the file and upload it again.</p>
+      <ul><% @import_errors.each do |error| %><li><%= error %></li><% end %></ul>
+    </div>
+  <% end %>
+  <%= form_with url: officer_csv_transfer_path, multipart: true, data: { turbo: false }, class: "clipboard" do |form| %>
+    <p><%= form.label :file, "GetInvolved event export (.xlsx or .csv)" %><%= form.file_field :file, accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.csv,text/csv", required: true %></p>
+    <p><%= form.submit "Import events", class: "button" %></p>
+  <% end %>
+  <p><%= link_to "Review events", officer_events_path, class: "text-link" %></p>
+</section>
+
+<section>
+  <h2>Download CSV reports</h2>
+  <p>Select a term or all time. Member points list every member, including those with no attendance. Officers are left off because they do not earn points; their attendance still appears in the attendance report with 0 points. RSVPs do not earn points.</p>
+  <% unless @current_term %><p class="quiet">No term covers today. The default report period is all time.</p><% end %>
+  <%= form_with url: export_officer_csv_transfer_path, method: :get, data: { turbo: false }, class: "clipboard" do |form| %>
+    <p><%= form.label :report, "Report" %><%= form.select :report, [["Events", "events"], ["Attendance", "attendances"], ["Members and points", "members"]] %></p>
+    <p><%= form.label :term_id, "Period" %><%= form.select :term_id, [["All time", "all"]] + @terms.map { |term| [term.name, term.id] }, selected: @current_term&.id || "all" %></p>
+    <p><%= form.submit "Download CSV", class: "button-secondary" %></p>
+  <% end %>
+  <p class="quiet">Attendance and member reports contain names and emails. Share them only with people authorized to view society records.</p>
+</section>
+<p><%= link_to "Back to officer dashboard", officer_root_path, class: "text-link" %></p>

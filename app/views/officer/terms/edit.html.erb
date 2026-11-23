@@ -1,0 +1,5 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Edit <%= @term.name %></h1>
+<p class="lede">Changing these dates reassigns events in the affected range. Existing attendance is preserved.</p>
+<%= render "form" %>
+<p><%= link_to "Back to terms", officer_terms_path, class: "text-link" %></p>

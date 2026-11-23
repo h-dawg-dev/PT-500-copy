@@ -1,0 +1,11 @@
+<% @questions.each.with_index(1) do |question, number| %>
+  <% if question[:key] == :classification %>
+    <section>
+      <h2>Demographic Information (Optional)</h2>
+      <p>This information may be used to help connect you to resources or peer groups within the Physical Therapy Society. If you’d prefer not to answer, please feel welcome to skip these questions.</p>
+    </section>
+  <% elsif question[:key] == :email_opt_in %>
+    <h2>Email preferences</h2>
+  <% end %>
+  <%= render "questionnaire/question", form: form, question: question, number: number %>
+<% end %>

@@ -1,0 +1,49 @@
+<p class="eyebrow">Officer desk</p>
+<h1>All events</h1>
+<p class="lede">Edit a posting or open it to mark who was in the room. Press <kbd>/</kbd> to search.</p>
+
+<div data-controller="board-search">
+<div class="toolbar">
+  <%= form_with url: officer_events_path, method: :get, class: "search-form", data: { turbo_action: "advance" } do %>
+    <label class="sr-only" for="officer_q">Search events</label>
+    <%= search_field_tag :q, @query, id: "officer_q", placeholder: "Events, rooms, notes, people", autocomplete: "off", data: { board_search_target: "input", action: "input->board-search#filterLocal" } %>
+    <%= submit_tag "Search", class: "button-secondary" %>
+  <% end %>
+  <%= link_to "Post an event", new_officer_event_path, class: "button" %>
+  <%= link_to "Event import / CSV reports", officer_csv_transfer_path, class: "button-secondary" %>
+</div>
+<p class="quiet">Typing filters the events shown here. Press Search to search all events by title, room, notes, attendee name or email, term, or date.</p>
+
+<% if @events.any? %>
+  <div class="slot-list" data-board-search-target="list">
+    <% @events.each do |event| %>
+      <article class="slot" data-board-search-target="result" data-search-fields="<%= event.search_fields(include_attendees: true).to_json %>">
+        <p class="slot-time mono"><%= clinic_hour(event.starts_at) %></p>
+        <div class="slot-body">
+          <h3><%= link_to highlight_query(event.title, @query), officer_event_path(event) %></h3>
+          <p>
+            <span class="mono"><%= clinic_clock(event.starts_at) %></span>
+            · <%= pluralize(event.attendances.size, "present") %>
+          </p>
+        </div>
+        <div class="slot-side">
+          <span class="category-chip category-chip--<%= event.category %>"><%= event.category.humanize %></span>
+          <p class="slot-points mono"><%= event.points %> pt</p>
+        </div>
+      </article>
+    <% end %>
+  </div>
+  <p class="quiet empty-board is-hidden" data-board-search-target="empty">No events match that search on this page.</p>
+<% else %>
+  <section class="empty-board">
+    <h2>Board is empty</h2>
+    <p>
+      <% if @query.present? %>
+        No events match “<%= @query %>”.
+      <% else %>
+        Post a meeting so members have an event to attend.
+      <% end %>
+    </p>
+  </section>
+<% end %>
+</div>

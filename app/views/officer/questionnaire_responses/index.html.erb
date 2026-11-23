@@ -1,0 +1,132 @@
+<% content_for :main_class, "intake-page" %>
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
+<div class="intake-heading">
+  <div>
+    <p class="eyebrow">Officer desk · All-time intake</p>
+    <h1>Member intake forms</h1>
+    <p class="lede">Get to know the people behind the roster. Explore current responses and open a member's record when you need more detail.</p>
+  </div>
+  <%= link_to "Officer dashboard", officer_root_path, class: "button-secondary" %>
+</div>
+<p class="quiet intake-privacy">Optional background answers are for society planning. Share them only with officers who need them.</p>
+
+<%= form_with url: officer_questionnaire_responses_path, method: :get, class: "intake-filters" do |form| %>
+  <div class="intake-search">
+    <%= form.label :q, "Find a person" %>
+    <%= form.search_field :q, value: @filters["q"], placeholder: "Search name or email", maxlength: 200 %>
+  </div>
+  <div>
+    <%= form.label :classification, "Class standing" %>
+    <%= form.select :classification, [["All class standings", ""]] + Questionnaire.detail_questions.find { |q| q[:key] == :classification }[:options].map { |value, label| [label, value] } + [["Not answered", "unanswered"], ["Other / previous format", "other"]], selected: @filters["classification"] %>
+  </div>
+  <div>
+    <%= form.label :email_opt_in, "Email preference" %>
+    <%= form.select :email_opt_in, [["All preferences", ""], ["Opted in", "yes"], ["Opted out", "no"], ["Not answered", "unanswered"], ["Other / previous format", "other"]], selected: @filters["email_opt_in"] %>
+  </div>
+  <div>
+    <%= form.label :link_status, "Account" %>
+    <%= form.select :link_status, [["All accounts", ""], ["Linked account", "linked"], ["Not linked", "unlinked"]], selected: @filters["link_status"] %>
+  </div>
+  <div>
+    <%= form.label :sort, "Sort by" %>
+    <%= form.select :sort, [["Recently updated", "updated"], ["Newest submission", "newest"], ["Name A–Z", "name"]], selected: @filters["sort"] %>
+  </div>
+  <div class="intake-filter-actions">
+    <%= form.submit "Apply filters", class: "button" %>
+    <%= link_to "Reset filters", officer_questionnaire_responses_path, class: "text-link" %>
+  </div>
+<% end %>
+
+<section aria-labelledby="intake-overview-title">
+  <div class="intake-section-heading">
+    <h2 id="intake-overview-title">Intake overview</h2>
+    <p class="quiet"><%= pluralize(@dashboard.responses.size, "person", plural: "people") %> of <%= @dashboard.total_people %> · current filters</p>
+  </div>
+  <p class="quiet intake-caption">One current response per person, including unlinked submissions. Counts and charts reflect the filters above.</p>
+  <div class="intake-stats">
+    <article class="intake-stat">
+      <p>People with responses</p>
+      <strong><%= @dashboard.responses.size %></strong>
+      <span>Latest intake form per person</span>
+    </article>
+    <article class="intake-stat">
+      <p>Email opt-ins</p>
+      <strong><%= @dashboard.email_opt_ins %><small><%= @dashboard.percentage(@dashboard.email_opt_ins) %>%</small></strong>
+      <span>Explicitly chose Yes</span>
+    </article>
+    <article class="intake-stat">
+      <p>Recently updated</p>
+      <strong><%= @dashboard.recent_updates %></strong>
+      <span>In the last 30 days</span>
+    </article>
+    <article class="intake-stat">
+      <p>Not linked</p>
+      <strong><%= @dashboard.unlinked %></strong>
+      <span>Responses without a linked account</span>
+    </article>
+  </div>
+  <% if @dashboard.responses.any? %>
+    <div class="intake-charts">
+      <%= render "distribution", title: "Class standing", description: "A snapshot of the people responding.", rows: @dashboard.distribution("classification") %>
+      <%= render "distribution", title: "Email preferences", description: "Unanswered responses are separate from opting out.", rows: @dashboard.distribution("email_opt_in") %>
+    </div>
+  <% end %>
+</section>
+
+<section aria-labelledby="intake-responses-title">
+  <div class="intake-section-heading">
+    <h2 id="intake-responses-title">Intake forms</h2>
+    <p class="quiet"><%= pluralize(@dashboard.responses.size, "matching response") %></p>
+  </div>
+  <% if @responses.any? %>
+    <div class="intake-table-wrap">
+      <table class="roster intake-table" role="table">
+        <thead><tr role="row">
+          <th scope="col">Person</th><th scope="col">Class standing</th><th scope="col">Email updates</th><th scope="col">Last updated</th><th scope="col">Intake form</th>
+        </tr></thead>
+        <tbody>
+          <% @responses.each do |submission| %>
+            <tr role="row">
+              <td data-label="Person" class="intake-person" role="cell">
+                <% if submission.user %>
+                  <%= link_to @dashboard.name(submission), officer_member_path(submission.user), class: "intake-person-name" %>
+                <% else %>
+                  <strong><%= @dashboard.name(submission) %></strong>
+                <% end %>
+                <span class="intake-person-email"><%= submission.email %></span>
+                <span class="intake-account-status"><%= submission.user ? "Linked account" : "Not linked" %></span>
+              </td>
+              <td data-label="Class standing" role="cell"><%= questionnaire_answer_label(submission, "classification") %></td>
+              <td data-label="Email updates" role="cell"><span class="intake-preference <%= 'intake-preference-yes' if submission.answers['email_opt_in'] == 'yes' %>"><%= questionnaire_answer_label(submission, "email_opt_in") %></span></td>
+              <td data-label="Last updated" class="intake-date" role="cell"><%= submission.updated_at.in_time_zone.strftime("%b %-d, %Y") %></td>
+              <td class="intake-answer-cell" role="cell">
+                <details class="intake-details">
+                  <summary>View answers<span class="sr-only"> for <%= @dashboard.name(submission) %></span></summary>
+                  <dl>
+                    <div><dt>Expected graduation</dt><dd><%= questionnaire_answer_label(submission, "expected_graduation") %></dd></div>
+                    <div><dt>Transfer student</dt><dd><%= questionnaire_answer_label(submission, "transfer_student") %></dd></div>
+                    <div><dt>First generation</dt><dd><%= questionnaire_answer_label(submission, "first_generation") %></dd></div>
+                    <div><dt>Submitted</dt><dd><%= submission.created_at.in_time_zone.strftime("%b %-d, %Y") %></dd></div>
+                  </dl>
+                </details>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if @page_count > 1 %>
+      <nav class="intake-pagination" aria-label="Intake form pages">
+        <% if @page > 1 %><%= link_to "Previous", officer_questionnaire_responses_path(@filters.merge("page" => @page - 1)), class: "button-secondary" %><% end %>
+        <span>Page <%= @page %> of <%= @page_count %></span>
+        <% if @page < @page_count %><%= link_to "Next", officer_questionnaire_responses_path(@filters.merge("page" => @page + 1)), class: "button-secondary" %><% end %>
+      </nav>
+    <% end %>
+  <% elsif @dashboard.total_people.zero? %>
+    <div class="empty-board"><h3>No intake forms yet</h3><p>Members are reminded to fill out the intake form after they sign in.</p></div>
+  <% else %>
+    <div class="empty-board"><h3>No intake forms match these filters</h3><p>Try another name or email, or <%= link_to "reset the filters", officer_questionnaire_responses_path %>.</p></div>
+  <% end %>
+</section>

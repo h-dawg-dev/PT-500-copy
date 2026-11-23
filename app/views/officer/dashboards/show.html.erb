@@ -1,0 +1,22 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Officer dashboard</h1>
+<p class="lede">Hello, <%= current_user.display_name %>. This is the officer-only workspace.</p>
+
+<ul class="desk-list">
+  <li><%= link_to "Events and attendance", officer_events_path %></li>
+  <li><%= link_to "Post an event", new_officer_event_path %></li>
+  <li><%= link_to "Member records and point adjustments", officer_members_path %></li>
+  <li><%= link_to "Member intake forms", officer_questionnaire_responses_path %></li>
+  <li><%= link_to "Manage admins", officer_administrators_path %></li>
+  <li><%= link_to "Terms and semesters", officer_terms_path %></li>
+  <li><%= link_to "Event import / CSV reports", officer_csv_transfer_path %></li>
+  <li><%= link_to "Society settings", officer_settings_path %></li>
+</ul>
+
+<% if @next_event %>
+  <section>
+    <h2>Next event to run</h2>
+    <%= render "events/slot", event: @next_event %>
+    <p><%= link_to "Mark attendance", officer_event_path(@next_event), class: "button" %></p>
+  </section>
+<% end %>

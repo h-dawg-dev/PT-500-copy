@@ -1,0 +1,15 @@
+<h1>Help</h1>
+
+<% if @guides.many? %>
+  <nav class="filter-pills" aria-label="Guides">
+    <% @guides.each do |guide| %>
+      <%= link_to guide.title, "##{guide.key}-guide", class: "pill" %>
+    <% end %>
+  </nav>
+<% end %>
+
+<% @guides.each do |guide| %>
+  <section class="help-guide" id="<%= guide.key %>-guide">
+    <%= guide.html %>
+  </section>
+<% end %>

@@ -1,0 +1,17 @@
+default: &default
+  store_options:
+    # Cap age of oldest cache entry to fulfill retention policies
+    # max_age: <%= 60.days.to_i %>
+    max_size: <%= 256.megabytes %>
+    namespace: <%= Rails.env %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  # Heroku has a single DATABASE_URL. Do not point Solid Cache at a
+  # missing `cache` database — production.rb uses memory_store instead.
+  <<: *default

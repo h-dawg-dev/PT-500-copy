@@ -1,0 +1,17 @@
+<h1>Member Intake Form</h1>
+<p class="lede">Joining PTS? Complete this form so officers can get to know you and share opportunities. Only your name and email are required.</p>
+
+<% if @errors.present? %>
+  <div class="alert" role="alert">
+    <p>Please check the answers below. Your other answers have been kept.</p>
+    <ul><% @errors.each do |error| %><li><%= error %></li><% end %></ul>
+  </div>
+<% end %>
+
+<%= form_with url: questionnaire_path, method: :post, scope: :questionnaire, class: "questionnaire" do |form| %>
+  <%= render "questionnaire/questions", form: form %>
+
+  <p class="form-actions">
+    <%= form.submit "Submit", class: "button" %>
+  </p>
+<% end %>

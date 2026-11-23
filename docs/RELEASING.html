@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PT Society releases and versioning</title>
+<style>body{max-width:54rem;margin:3rem auto;padding:0 1.5rem;font:17px/1.6 system-ui,sans-serif;color:#1a2a2c}h1,h2{color:#123a3c}code{background:#e4f0ed;padding:.15rem .3rem}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:.6rem;border:1px solid #ccc}a{color:#123a3c}</style></head>
+<body><h1>Releases and versioning</h1>
+<p>The root <code>VERSION</code> file is the application version. Every page displays it in the footer, and deployment checks confirm that Heroku is serving the expected version. The initial version is <code>1.0.0</code>.</p>
+<h2>Update the version with every change</h2>
+<p>Include a version increase in every change, including maintenance, workflow and documentation updates. Use exactly three numbers, <code>MAJOR.MINOR.PATCH</code>, without a prefix, suffix or leading zeroes. Make the version greater than the target branch's current version. Keep the same version when promoting that change to another branch, provided it is higher than the target branch's version.</p>
+<table><thead><tr><th>Component</th><th>When to increase it</th><th>Example</th></tr></thead><tbody>
+<tr><td>Major</td><td>Incompatible changes to existing behavior or interfaces</td><td>1.4.2 → 2.0.0</td></tr>
+<tr><td>Minor</td><td>Backward-compatible features</td><td>1.4.2 → 1.5.0</td></tr>
+<tr><td>Patch</td><td>Fixes, maintenance, workflow or documentation changes</td><td>1.4.2 → 1.4.3</td></tr>
+</tbody></table>
+<p>Reset lower components when increasing a higher component. CI checks pull requests against their target commit, and pushes against the previous commit on that branch. A changed tree with an unchanged or lower version fails CI. A promotion with no file changes retains its version. Later edits within the same unmerged pull request can share its planned release version.</p>
+<h2>Automatic Heroku deployment</h2>
+<table><thead><tr><th>Push branch</th><th>Heroku app</th><th>URL</th></tr></thead><tbody>
+<tr><td>dev</td><td>tlind-pts-dev (staging)</td><td><a href="https://tlind-pts-dev-442d7fd7a3a8.herokuapp.com/">Staging</a></td></tr>
+<tr><td>main</td><td>tlind-pts (production)</td><td><a href="https://tlind-pts-bfd5ca266875.herokuapp.com/">Production</a></td></tr>
+</tbody></table>
+<p><code>.github/workflows/ci.yml</code> deploys only after version validation, Brakeman, the dependency audit, RuboCop, RSpec, and JavaScript tests pass. Pull requests and the test branch run checks without Heroku deployment. A failed, skipped or cancelled prerequisite prevents deployment.</p>
+<p>Deployments are serialized per branch. Superseded commits are skipped, and Git pushes use the exact commit that passed CI. The script then checks that Heroku's release succeeded, the active slug matches that commit, <code>/up</code> responds successfully, and the homepage footer shows the expected version. Heroku's Procfile release command applies database migrations. A failed release leaves the previous release active; a health-check failure fails CI and needs investigation.</p>
+<h2>Credentials and operations</h2>
+<p>Deployment requires the repository's Actions secret <code>HEROKU_API_KEY</code>, set to a dedicated Heroku OAuth authorization that can authenticate to Heroku Git and read release/slug metadata. The literal <code>read,write</code> scopes failed verification. Heroku's protected app scopes also grant access to runtime configuration and secrets for all apps accessible to the authorized account; obtain explicit approval for that exposure before provisioning. For narrower access, use a dedicated automation account with access only to the intended apps. Verify Git and release/slug access before activation. Revoke or rotate the authorization independently of local CLI login, then replace the GitHub secret. Keep tokens out of source files and logs. The deployment workflow does not create or upgrade dynos or databases.</p>
+<p>GitHub Actions must be enabled for this repository. If organization policy disables Actions, an organization administrator must allow this repository before checks or deployment can run; a repository administrator cannot override that policy.</p>
+<p>Existing Vercel deployment remains in its separate workflow. This document describes the Heroku CI gate; Vercel's separate workflow is not gated by these jobs.</p>
+<p>For a fresh database, run <code>heroku run 'bundle exec rails db:seed' -a APP</code> after migration to install reference terms. Seeds preserve existing named terms. For rollback, use a compensating change with a higher version, or an explicit Heroku rollback; database migrations are not reversed by code rollback.</p>
+<p>Implementation references: <a href="../VERSION">VERSION</a>, <a href="../AGENTS.md">working instructions</a>, <a href="../.github/workflows/ci.yml">CI workflow</a>, <a href="../script/deploy-heroku.sh">deployment script</a>. Platform behavior is documented by <a href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds">GitHub job dependencies</a>, <a href="https://devcenter.heroku.com/articles/release-phase">Heroku release phase</a>, and <a href="https://devcenter.heroku.com/articles/oauth#scopes">Heroku OAuth scopes</a>.</p>
+</body></html>

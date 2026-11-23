@@ -1,0 +1,21 @@
+<%# O14.1: check-ins and officer point adjustments, newest first. %>
+<ol class="checkin-list points-history">
+  <% entries.each do |entry| %>
+    <% if entry.is_a?(PointAdjustment) %>
+      <li class="adjustment-entry">
+        <span>
+          Point adjustment · <%= entry.category.humanize %>
+          <span class="history-detail"><%= entry.reason %><% if entry.recorded_by %> · by <%= entry.recorded_by.display_name %><% end %></span>
+        </span>
+        <span class="mono"><%= clinic_clock(entry.created_at) %></span>
+        <span class="pts"><%= signed_points(entry.points) %></span>
+      </li>
+    <% else %>
+      <li>
+        <%= link_to entry.event.title, session_path_for(entry.event) %>
+        <span class="mono"><%= clinic_clock(entry.event.starts_at) %></span>
+        <span class="pts"><%= signed_points(entry.points_awarded) %></span>
+      </li>
+    <% end %>
+  <% end %>
+</ol>

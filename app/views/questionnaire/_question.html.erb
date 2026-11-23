@@ -1,0 +1,53 @@
+<section class="question-card">
+  <% key = question[:key].to_s %>
+  <% errors = @field_errors&.fetch(key, []) || [] %>
+  <% error_id = "questionnaire_#{key}_error" %>
+  <p class="question-number">
+    Question <%= number %>
+    <% if question[:required] %><span class="required-tag">Required</span><% end %>
+  </p>
+
+  <% case question[:type] %>
+  <% when :choice %>
+    <fieldset>
+      <legend class="question-prompt"><%= question[:prompt] %></legend>
+      <div class="choice-list" data-controller="radio-toggle">
+        <% question[:options].each do |value, label| %>
+          <label class="choice">
+            <%= form.radio_button question[:key], value, required: question[:required], checked: @answers[key] == value, data: { action: "click->radio-toggle#toggle" } %>
+            <span><%= label %></span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+  <% when :semester_year %>
+    <% semester, year = @answers[key].to_s.split %>
+    <fieldset>
+      <legend class="question-prompt"><%= question[:prompt] %></legend>
+      <div class="semester-year">
+        <%= form.fields_for question[:key] do |part| %>
+          <div>
+            <%= part.label :semester, "Semester" %>
+            <%= part.select :semester, question[:semesters], { include_blank: "Choose a semester", selected: semester } %>
+          </div>
+          <div>
+            <%= part.label :year, "Year" %>
+            <%= part.select :year, Questionnaire.graduation_years, { include_blank: "Choose a year", selected: year } %>
+          </div>
+        <% end %>
+      </div>
+    </fieldset>
+  <% when :select %>
+    <%= form.label question[:key], question[:prompt], class: "question-prompt" %>
+    <%= form.select question[:key], question[:options].invert, { include_blank: question[:placeholder], selected: @answers[key] }, required: question[:required] %>
+  <% when :short %>
+    <%= form.label question[:key], question[:prompt], class: "question-prompt" %>
+    <%= form.text_field question[:key], type: question.fetch(:input, "text"), placeholder: question[:placeholder], autocomplete: question[:autocomplete], maxlength: question[:maxlength], required: question[:required], value: @answers[key], aria: { invalid: errors.any? ? "true" : nil, describedby: errors.any? ? error_id : nil } %>
+  <% when :text %>
+    <%= form.label question[:key], question[:prompt], class: "question-prompt" %>
+    <%= form.text_area question[:key], rows: question.fetch(:rows, 4), placeholder: question[:placeholder], required: question[:required], value: @answers[key] %>
+  <% end %>
+  <% if errors.any? %>
+    <p class="field-error" id="<%= error_id %>"><%= errors.join(" ") %></p>
+  <% end %>
+</section>

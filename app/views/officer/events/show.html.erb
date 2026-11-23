@@ -1,0 +1,111 @@
+<p class="eyebrow">Officer roster</p>
+<h1><%= @event.title %></h1>
+<p class="lede mono"><%= clinic_clock(@event.starts_at) %><% if @event.ends_at.present? %> – <%= clinic_hour(@event.ends_at) %><% end %><% if @event.location.present? %> · <%= @event.location %><% end %></p>
+<p>
+  <%= link_to "Edit event", edit_officer_event_path(@event), class: "button-secondary" %>
+  <%= link_to "Member view", event_path(@event), class: "text-link" %>
+</p>
+
+<div data-controller="roster" data-roster-create-url-value="<%= officer_event_attendances_path(@event) %>">
+<dl class="facts">
+  <div>
+    <dt>Points</dt>
+    <dd class="mono"><%= @event.points %></dd>
+  </div>
+  <div>
+    <dt>Category</dt>
+    <dd><%= @event.category.humanize %></dd>
+  </div>
+  <% if @event.term %>
+    <div>
+      <dt>Term</dt>
+      <dd><%= @event.term.name %></dd>
+    </div>
+  <% end %>
+  <div>
+    <dt>On the roster</dt>
+    <dd class="mono"><span data-roster-target="presentCount"><%= @attendance_by_user_id.size %></span> present · <%= @rsvp_by_user_id.size %> going</dd>
+  </div>
+</dl>
+
+<% if @event.notes.present? %>
+  <section class="notes-block">
+    <h2>Notes</h2>
+    <%= simple_format(@event.notes) %>
+  </section>
+<% end %>
+<section>
+  <h2>Import attendance</h2>
+  <p>Upload the GetInvolved <strong>attendance export</strong> for this event (.xlsx or CSV UTF-8). Members are matched by <strong>email</strong>, and everyone listed is marked present.</p>
+  <p class="quiet">People already marked present are left as they are. If any email doesn't match a member, nothing is imported. Maximum: 2 MB and 2,000 rows.</p>
+  <% if flash[:import_errors].present? %>
+    <div class="alert" role="alert">
+      <p>No attendance was imported. Correct the file and upload it again.</p>
+      <ul><% flash[:import_errors].each do |error| %><li><%= error %></li><% end %></ul>
+    </div>
+  <% end %>
+  <%= form_with url: officer_event_attendance_import_path(@event), multipart: true, data: { turbo: false }, class: "clipboard" do |form| %>
+    <p><%= form.label :file, "GetInvolved attendance export (.xlsx or .csv)" %><%= form.file_field :file, accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.csv,text/csv", required: true %></p>
+    <p><%= form.submit "Import attendance", class: "button" %></p>
+  <% end %>
+</section>
+<section>
+  <h2>Who was here</h2>
+  <p class="quiet">Tab to a person or their button. <kbd>↑</kbd> <kbd>↓</kbd> move between people; <kbd>Enter</kbd> or <kbd>Space</kbd> toggles attendance. <kbd>/</kbd> finds someone.</p>
+  <p class="quiet">Officers can be marked present, but their attendance earns no points.</p>
+
+  <% if @members.any? %>
+    <div class="toolbar">
+      <label class="sr-only" for="roster_q">Find someone</label>
+      <input id="roster_q" type="search" placeholder="Find by name or email" autocomplete="off" data-roster-target="query" data-action="input->roster#filter">
+    </div>
+    <p class="quiet" data-roster-target="live" aria-live="polite"></p>
+    <table class="roster">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Going</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @members.each do |member| %>
+          <% attendance = @attendance_by_user_id[member.id] %>
+          <% rsvp = @rsvp_by_user_id[member.id] %>
+          <tr
+            class="roster-row<%= " is-present" if attendance %>"
+            tabindex="0"
+            data-roster-target="row"
+            data-user-id="<%= member.id %>"
+            data-attendance-id="<%= attendance&.id %>"
+            data-present="<%= attendance.present? %>"
+            data-name="<%= member.display_name %>"
+            data-email="<%= member.email %>"
+            data-delete-url="<%= attendance ? officer_event_attendance_path(@event, attendance) : "" %>"
+            data-action="click->roster#selectRow focusin->roster#selectRow keydown->roster#keydown">
+            <td><%= member.display_name %></td>
+            <td><%= member.email %></td>
+            <td><%= member.role %><% unless member.earns_points? %> <span class="when-chip">no points</span><% end %></td>
+            <td><%= rsvp ? "Going" : "—" %></td>
+            <td data-roster-target="status"><%= attendance ? "Present" : "—" %></td>
+            <td>
+              <button type="button" class="<%= attendance ? "linkish" : "button-secondary compact" %>" data-roster-target="button" data-action="click->roster#toggleButton">
+                <%= attendance ? "Remove" : "Mark present" %>
+              </button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <p class="quiet is-hidden" data-roster-target="empty">Nobody on the roster matches that search.</p>
+  <% else %>
+    <p class="quiet">Nobody has signed in yet, so the roster is empty.</p>
+  <% end %>
+</section>
+</div>
+
+<p class="quiet">Removing an event also removes its attendance and points from members' totals.</p>
+<%= button_to "Take off the board", officer_event_path(@event), method: :delete, class: "danger-link", data: { turbo_confirm: "Take this event off the board and remove its attendance and points?" } %>

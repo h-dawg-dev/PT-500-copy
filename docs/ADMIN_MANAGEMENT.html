@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Managing admin access — Physical Therapy Society</title>
+  <style>
+    body { max-width: 48rem; margin: 3rem auto; padding: 0 1.25rem; font: 1rem/1.6 system-ui, sans-serif; color: #123a3c; }
+    h1, h2 { line-height: 1.2; }
+    code { background: #f2f2ed; padding: .15rem .3rem; }
+  </style>
+</head>
+<body>
+  <h1>Managing admin access</h1>
+  <p>Admins use the app's existing <code>officer</code> role. Any current officer can grant the same access to another registered user.</p>
+  <h2>Make someone an admin</h2>
+  <ol>
+    <li>Have the person sign in once so their account appears in the app.</li>
+    <li>Open <strong>Officer tools</strong>, then <strong>Manage admins</strong> (<code>/officer/administrators</code>).</li>
+    <li>Search by name or email and check the account's email address.</li>
+    <li>Select <strong>Make admin</strong> and confirm the account and access.</li>
+  </ol>
+  <p>The page confirms the change and shows <strong>Admin (officer)</strong>. That person can now open officer tools and manage events, attendance, points, reports, and other admins. They may need to refresh their page.</p>
+  <p>Promotion preserves the person's attendance and point adjustment records, but they stop earning member points, including from past records. They are excluded from member points reports.</p>
+  <h2>Access and persistence</h2>
+  <p>Members and signed-out visitors cannot list accounts here or grant admin access, even by submitting the request directly. Existing admins are labelled as admins and have no promotion button. Repeating a promotion is safe.</p>
+  <p>Grants are stored in the application's database and survive later sign-ins. An account promoted in dev must be promoted separately in production if the environments use different databases.</p>
+  <h2>First admin and access removal</h2>
+  <p>The existing <code>OFFICER_EMAILS</code> configuration still provides initial admin access. This page grants access; access removal continues to use the existing operational process: remove the email from <code>OFFICER_EMAILS</code> and change the saved user's role to <code>member</code>. Both steps are needed for an allowlisted account.</p>
+</body>
+</html>

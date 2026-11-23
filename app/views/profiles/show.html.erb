@@ -1,0 +1,19 @@
+<h1>My information</h1>
+
+<% if @intake_rows %>
+  <section>
+    <dl class="facts facts-stacked">
+      <% @intake_rows.each do |prompt, answer| %>
+        <div>
+          <dt><%= prompt %></dt>
+          <dd><%= answer.presence || "--" %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </section>
+
+  <p><%= link_to "Update my information", edit_profile_path, class: "button-secondary" %></p>
+<% else %>
+  <p class="lede">You haven't filled out the Member Intake Form yet.</p>
+  <p><%= link_to "Fill out the form", questionnaire_path, class: "button" %></p>
+<% end %>

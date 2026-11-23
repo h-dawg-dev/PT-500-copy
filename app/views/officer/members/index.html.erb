@@ -1,0 +1,43 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Member records</h1>
+<p class="lede">Open someone's record to see their points<% if @term %> for <%= @term.name %><% end %> and add or subtract points. Press <kbd>/</kbd> to search.</p>
+
+<% unless @term %>
+  <p class="alert">No term covers today, so points can't be shown or adjusted. Ask an administrator to set the current term dates.</p>
+<% end %>
+
+<div data-controller="board-search">
+  <% if @people.any? %>
+    <div class="toolbar">
+      <label class="sr-only" for="members_q">Find a member</label>
+      <input id="members_q" type="search" placeholder="Find by name or email" autocomplete="off" data-board-search-target="input" data-action="input->board-search#filterLocal">
+    </div>
+    <div class="table-scroll" data-board-search-target="list">
+      <table class="roster">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <% if @term %><th>Points</th><% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @people.each do |person| %>
+            <tr data-board-search-target="result" data-search-fields="<%= [ person.display_name, person.email ].to_json %>">
+              <td><%= link_to person.display_name, officer_member_path(person) %></td>
+              <td><%= person.email %></td>
+              <td><%= person.role %><% unless person.earns_points? %> <span class="when-chip">no points</span><% end %></td>
+              <% if @term %>
+                <td class="mono"><%= person.earns_points? ? "#{@points_by_user_id[person.id]} / #{@term.required_points}" : "—" %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <p class="quiet is-hidden" data-board-search-target="empty">Nobody matches that search.</p>
+  <% else %>
+    <p class="quiet">Nobody has signed in yet, so there are no member records.</p>
+  <% end %>
+</div>

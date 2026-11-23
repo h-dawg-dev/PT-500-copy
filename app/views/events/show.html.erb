@@ -1,0 +1,61 @@
+<p class="eyebrow"><%= @event.upcoming? ? "Upcoming event" : "Past event" %></p>
+<h1><%= @event.title %></h1>
+<p class="lede mono"><%= clinic_clock(@event.starts_at) %><% if @event.ends_at.present? %> – <%= clinic_hour(@event.ends_at) %><% end %></p>
+
+<dl class="facts">
+  <% if @event.location.present? %>
+    <div>
+      <dt>Room</dt>
+      <dd><%= @event.location %></dd>
+    </div>
+  <% end %>
+  <div>
+    <dt>Points</dt>
+    <dd class="mono"><%= @event.points %></dd>
+  </div>
+  <div>
+    <dt>Category</dt>
+    <dd><%= @event.category.humanize %></dd>
+  </div>
+  <% if @event.term %>
+    <div>
+      <dt>Term</dt>
+      <dd><%= @event.term.name %></dd>
+    </div>
+  <% end %>
+  <div>
+    <dt>Your status</dt>
+    <dd>
+      <% if @attended %>
+        Marked present<% unless current_user.earns_points? %> · no points for officers<% end %>
+      <% elsif @rsvped && @event.upcoming? %>
+        You're going
+      <% else %>
+        Not checked in yet
+      <% end %>
+    </dd>
+  </div>
+</dl>
+
+<% if @event.upcoming? %>
+  <p class="rsvp-actions">
+    <% if @rsvped %>
+      <%= button_to "Not going", event_rsvp_path(@event), method: :delete, class: "button-secondary" %>
+    <% else %>
+      <%= button_to "I'm going", event_rsvp_path(@event), class: "button" %>
+    <% end %>
+  </p>
+<% end %>
+
+<% if @event.notes.present? %>
+  <section>
+    <h2>Notes</h2>
+    <p><%= simple_format(@event.notes) %></p>
+  </section>
+<% end %>
+
+<% if current_user.officer? %>
+  <p><%= link_to "Open officer roster", officer_event_path(@event), class: "button" %></p>
+<% end %>
+
+<p><%= link_to "Back to events", events_path, class: "text-link" %></p>

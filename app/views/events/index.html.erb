@@ -1,0 +1,54 @@
+<p class="eyebrow">Event board</p>
+<h1>
+  <% if @query.present? && @filter == "all" %>
+    Matching events
+  <% elsif @filter == "past" %>
+    Past events
+  <% elsif @filter == "all" %>
+    All events
+  <% else %>
+    Upcoming events
+  <% end %>
+</h1>
+<p class="lede">Meetings, volunteer shifts, and clinic nights. Officers mark who was in the room. Press <kbd>/</kbd> to search.</p>
+
+<div data-controller="board-search">
+<div class="toolbar">
+  <%= form_with url: events_path, method: :get, class: "search-form", data: { turbo_action: "advance" } do %>
+    <%= hidden_field_tag :filter, @filter, data: { board_search_target: "filter" } %>
+    <label class="sr-only" for="q">Search sessions</label>
+    <%= search_field_tag :q, @query, id: "q", placeholder: current_user.officer? ? "Events, rooms, notes, people" : "Events, rooms, notes", autocomplete: "off", data: { board_search_target: "input", action: "input->board-search#filterLocal" } %>
+    <%= submit_tag "Search", class: "button-secondary" %>
+  <% end %>
+
+  <p class="filter-pills">
+    <%= link_to "Upcoming", events_path(filter: "upcoming", q: @query), class: (@filter == "upcoming" ? "pill is-on" : "pill") %>
+    <%= link_to "Past", events_path(filter: "past", q: @query), class: (@filter == "past" ? "pill is-on" : "pill") %>
+    <%= link_to "All", events_path(filter: "all", q: @query), class: (@filter == "all" ? "pill is-on" : "pill") %>
+  </p>
+</div>
+<p class="quiet">Typing filters the events shown here. Press Search to search the full selected list by title, room, notes, <% if current_user.officer? %>attendee name or email, <% end %>term, or date.</p>
+
+<% if @events.any? %>
+  <div class="slot-list" data-board-search-target="list">
+    <%= render partial: "events/slot", collection: @events, as: :event, locals: { query: @query } %>
+  </div>
+  <p class="quiet empty-board is-hidden" data-board-search-target="empty">No events match that search on this page.</p>
+<% else %>
+  <section class="empty-board">
+    <h2>Nothing on the board</h2>
+    <p>
+      <% if @query.present? %>
+        No sessions match “<%= @query %>”. Try a title, room, or word from the notes.
+      <% elsif current_user.officer? %>
+        Post the first event so members have somewhere to check in.
+      <% else %>
+        Officers have not posted any events in this list yet.
+      <% end %>
+    </p>
+    <% if current_user.officer? %>
+      <p><%= link_to "Post an event", new_officer_event_path, class: "button" %></p>
+    <% end %>
+  </section>
+<% end %>
+</div>

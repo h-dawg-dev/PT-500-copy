@@ -1,0 +1,30 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Society settings</h1>
+<p class="lede">These rules apply to everyone using this deployment.</p>
+
+<section>
+  <h2>Email access policy</h2>
+  <%= form_with model: @settings, url: officer_settings_path, method: :patch do |form| %>
+    <p>
+      <%= form.hidden_field :require_tamu_email, value: "0", id: nil %>
+      <label>
+        <%= form.check_box :require_tamu_email, { checked: @settings.require_tamu_email? }, "1", nil %>
+        Only allow <strong>@tamu.edu</strong> email addresses
+      </label>
+    </p>
+    <% if @settings.errors.any? %>
+      <p class="quiet"><%= @settings.errors.full_messages.to_sentence %></p>
+    <% end %>
+    <p class="form-actions"><%= form.submit "Save", class: "button" %></p>
+  <% end %>
+  <% if @settings.require_tamu_email? %>
+    <p>Members and officers must sign in with a verified <strong>@tamu.edu</strong> email address. This applies to new and existing accounts on every request.</p>
+    <p>The only exception is <strong><%= User::ORGANIZATION_MEMBER_EMAIL %></strong>. It has member access only and cannot be promoted to an officer.</p>
+    <p class="quiet">Other domains, including TAMU subdomains, are not accepted.</p>
+  <% else %>
+    <p><strong>@tamu.edu is not required right now.</strong> Any verified email address can sign in, which is useful for testing with personal accounts. Turn this back on when testing is done.</p>
+  <% end %>
+  <p class="quiet">Keep Clerk's sign-up restrictions aligned with this setting, or Clerk may still block personal addresses before they reach the app.</p>
+</section>
+
+<p><%= link_to "Back to officer dashboard", officer_root_path, class: "text-link" %></p>

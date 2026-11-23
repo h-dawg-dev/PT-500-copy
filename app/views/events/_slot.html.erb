@@ -1,0 +1,28 @@
+<article class="slot" data-board-search-target="result" data-search-fields="<%= event.search_fields(include_attendees: current_user&.officer?).to_json %>">
+  <p class="slot-time mono"><%= clinic_hour(event.starts_at) %></p>
+  <div class="slot-body">
+    <h3><%= link_to highlight_query(event.title, local_assigns[:query]), session_path_for(event) %></h3>
+    <p>
+      <span class="mono"><%= clinic_clock(event.starts_at) %></span>
+      <% if event.location.present? %>
+        · <%= highlight_query(event.location, local_assigns[:query]) %>
+      <% end %>
+      <% unless event.upcoming? %>
+        <span class="when-chip">past</span>
+      <% end %>
+      <% if event.term %>
+        <span class="when-chip"><%= event.term.name %></span>
+      <% end %>
+      <% if current_user && event.rsvped_by?(current_user) && event.upcoming? %>
+        <span class="when-chip going-chip">going</span>
+      <% end %>
+    </p>
+    <% if event.notes.present? && local_assigns[:query].present? %>
+      <p class="slot-notes"><%= highlight_query(event.notes.truncate(120), query) %></p>
+    <% end %>
+  </div>
+  <div class="slot-side">
+    <span class="category-chip category-chip--<%= event.category %>"><%= event.category.humanize %></span>
+    <p class="slot-points mono"><%= event.points %> pt</p>
+  </div>
+</article>

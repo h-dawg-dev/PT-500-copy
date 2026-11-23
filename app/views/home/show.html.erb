@@ -1,0 +1,98 @@
+<% if signed_in? && current_user.officer? %>
+  <p class="eyebrow">Officer chart</p>
+  <h1>Welcome back, <%= current_user.display_name %></h1>
+  <p class="lede">You are signed in as an <strong>officer</strong>. Post events, then mark who was in the room.</p>
+
+  <p class="quiet">Officers are not part of the points system. Your attendance is still recorded, but it earns no points.</p>
+  <% unless @term %>
+    <p class="alert">No term covers today. Ask an administrator to <%= link_to "set the current term dates", officer_terms_path %> before reviewing member eligibility.</p>
+  <% end %>
+
+  <% if @next_event %>
+    <section>
+      <h2>Next on the board</h2>
+      <%= render "events/slot", event: @next_event %>
+    </section>
+  <% else %>
+    <section class="empty-board">
+      <h2>Nothing posted yet</h2>
+      <p>Put the first meeting, volunteer shift, or clinic night on the board.</p>
+      <p><%= link_to "Post an event", new_officer_event_path, class: "button" %></p>
+    </section>
+  <% end %>
+
+  <section>
+    <h2>Officer tools</h2>
+    <p><%= link_to "Open officer dashboard", officer_root_path, class: "button-secondary" %></p>
+  </section>
+<% elsif signed_in? %>
+  <p class="eyebrow">Your clinic chart</p>
+  <h1>Welcome, <%= current_user.display_name %></h1>
+  <p class="lede">You are signed in as a <strong>member</strong>. Officers mark attendance; you can see your own events and points here.</p>
+
+  <% if @term %>
+  <p class="tape-tab"><span class="mono"><%= @points_earned %></span> / <%= @required_points %> points earned · <%= @term.name %></p>
+
+  <section>
+    <h2>Requirements<% if @term %> · <%= @term.name %><% end %></h2>
+    <% if @points_requirement_met %>
+      <p>You have met the points requirement.</p>
+    <% else %>
+      <ul>
+        <% if @points_earned < @required_points %>
+          <li><%= pluralize(@required_points - @points_earned, "more point") %> needed in total</li>
+        <% end %>
+        <% @missing_category_points.each do |category, missing| %>
+          <% next if missing.zero? %>
+          <li><%= pluralize(missing, "#{category} point") %> still needed</li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+   <%# U30.2: dues are tracked per term, like points. %>
+    <section>
+      <h2>Dues · <%= @term.name %></h2>
+      <% if current_user.dues_paid?(@term) %>
+        <p>Your dues are paid for <%= @term.name %>.</p>
+      <% else %>
+        <p>Your dues are not paid yet for <%= @term.name %>. Use <strong>Dues</strong> in the navigation to pay. An officer records your payment, so it may take a little while to show up here.</p>
+      <% end %>
+    </section>
+  <% else %>
+    <section class="notice">
+      <h2>Current term unavailable</h2>
+      <p>Semester points and eligibility will appear once the current term dates are set. Your past check-ins remain in your history below.</p>
+    </section>
+  <% end %>
+
+  <% if @next_event %>
+    <section>
+      <h2>Next event</h2>
+      <%= render "events/slot", event: @next_event %>
+    </section>
+  <% else %>
+    <section class="empty-board">
+      <h2>No upcoming events</h2>
+      <p>When an officer posts a meeting, it will land on this chart.</p>
+    </section>
+  <% end %>
+
+  <%# O14.1: officer adjustments show in the member's own points history. %>
+  <section>
+    <h2>Your points history<%= " · All time" unless @term %></h2>
+    <% if @history.any? %>
+      <%= render "shared/points_history", entries: @history %>
+    <% else %>
+      <p class="quiet">No check-ins yet. Show up to an event and an officer will mark you present.</p>
+    <% end %>
+  </section>
+<% else %>
+  <p class="eyebrow">Event board</p>
+  <h1>Physical Therapy Society</h1>
+  <p class="lede">Internal member intake, attendance, and points for PTS officers and members.</p>
+  <% if clerk_sign_in_url.present? %>
+    <p><%= link_to "Sign in", clerk_sign_in_url, class: "button", data: { action: "clerk#signIn", turbo: false } %></p>
+  <% else %>
+    <p>Sign in will be available after Clerk keys are added to <code>.env</code>.</p>
+  <% end %>
+<% end %>

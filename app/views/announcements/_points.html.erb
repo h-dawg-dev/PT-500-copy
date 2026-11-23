@@ -1,0 +1,27 @@
+<%# U12.1: every officer change to the member's points since they last dismissed this pop-up.
+    U12.4: a native modal dialog. Close or Esc closes it, and its title and text are read by screen readers. %>
+<dialog id="points_announcement" class="announcement" aria-labelledby="points_announcement_title" aria-describedby="points_announcement_body"
+  data-controller="announcement" data-action="close->announcement#dismiss" data-turbo-temporary>
+  <p class="eyebrow">Announcement</p>
+  <h2 id="points_announcement_title">Your points were updated</h2>
+  <div id="points_announcement_body">
+    <p>Since you last signed in, an officer made <%= pluralize(adjustments.size, "change") %> to your points:</p>
+    <ul class="announcement-list">
+      <% adjustments.each do |adjustment| %>
+        <li>
+          <strong><%= point_change(adjustment) %></strong>
+          <span class="history-detail">Reason: <%= adjustment.reason %></span>
+          <span class="history-detail">Date: <time datetime="<%= adjustment.created_at.iso8601 %>"><%= clinic_clock(adjustment.created_at) %></time></span>
+        </li>
+      <% end %>
+    </ul>
+    <p class="quiet">Your points history on your home page keeps every change.</p>
+  </div>
+  <%# U12.2: closing records these changes as seen. Only the ids shown here are sent. %>
+  <%= form_with url: announcement_dismissal_path, data: { announcement_target: "form", action: "submit->announcement#close" } do %>
+    <% adjustments.each do |adjustment| %>
+      <%= hidden_field_tag "point_adjustment_ids[]", adjustment.id, id: nil %>
+    <% end %>
+    <p class="form-actions"><button type="submit" class="button" autofocus>Close</button></p>
+  <% end %>
+</dialog>

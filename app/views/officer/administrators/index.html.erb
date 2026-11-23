@@ -1,0 +1,48 @@
+<p class="eyebrow">Officer desk</p>
+<h1>Manage admins</h1>
+<p class="lede">Grant admin access to someone who has signed in to the app. Admins have the officer role and can manage events, attendance, points, reports, and other admins.</p>
+<p class="quiet">Promoting a member stops their attendance and adjustments from counting toward member points. Their records are kept.</p>
+
+<div data-controller="board-search">
+  <div class="toolbar">
+    <label class="sr-only" for="administrators_q">Find a person</label>
+    <input id="administrators_q" type="search" placeholder="Find by name or email" autocomplete="off" data-board-search-target="input" data-action="input->board-search#filterLocal">
+  </div>
+  <div class="table-scroll" data-board-search-target="list">
+    <table class="roster">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Access</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @people.each do |person| %>
+          <tr data-board-search-target="result" data-search-fields="<%= [ person.display_name, person.email ].to_json %>">
+            <td><%= person.display_name %></td>
+            <td><%= person.email %></td>
+            <td><%= person.officer? ? "Admin (officer)" : "Member" %></td>
+            <td>
+              <% if person.organization_member_account? %>
+                <span class="quiet">Organization account · member access only</span>
+              <% elsif person.officer? %>
+                <span class="quiet"><%= person == current_user ? "Your account" : "Already an admin" %></span>
+              <% else %>
+                <%= button_to "Make admin", officer_administrator_path(person), method: :patch,
+                  class: "button",
+                  aria: { label: "Make #{person.display_name} (#{person.email}) an admin" },
+                  form: { data: { turbo_confirm: "Give #{person.display_name} (#{person.email}) admin access? They will be able to manage events, attendance, points, reports, and other admins, and will stop earning member points." } } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <p class="quiet is-hidden" data-board-search-target="empty">Nobody matches that search.</p>
+</div>
+
+<p><%= link_to "Back to officer dashboard", officer_root_path %></p>
+<p><%= link_to "Society settings and email access policy", officer_settings_path, class: "text-link" %></p>

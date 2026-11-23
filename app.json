@@ -1,0 +1,21 @@
+{
+  "name": "pt-society",
+  "description": "CSCE-431 Physical Therapy Society member, attendance, and points app",
+  "stack": "heroku-24",
+  "buildpacks": [
+    { "url": "heroku/ruby" }
+  ],
+  "addons": ["heroku-postgresql:essential-0"],
+  "scripts": {
+    "postdeploy": "bundle exec rails db:migrate"
+  },
+  "env": {
+    "RAILS_ENV": { "value": "production" },
+    "RAILS_MASTER_KEY": { "required": true },
+    "RAILS_SERVE_STATIC_FILES": { "value": "enabled" },
+    "CLERK_SECRET_KEY": { "required": true },
+    "CLERK_PUBLISHABLE_KEY": { "required": true },
+    "CLERK_SIGN_IN_URL": { "required": true },
+    "OFFICER_EMAILS": { "required": false }
+  }
+}
